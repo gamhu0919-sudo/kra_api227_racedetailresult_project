@@ -32,6 +32,9 @@ kra_api227_racedetailresult_project.zip
 !kra_race_prediction_stage03_top3_modeling/data/predictions/*.csv
 !kra_race_prediction_stage03_top3_modeling/outputs/tables/*.csv
 
+# Stage 05 Inference Pipeline (허용)
+!kra_race_prediction_stage05_inference_pipeline/**
+
 # IDE
 .vscode/
 .idea/

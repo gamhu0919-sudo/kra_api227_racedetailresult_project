@@ -38,42 +38,57 @@ if data.get("modeling_ready") is None or lgb_model is None:
 with st.sidebar:
     st.header("⚙️ 사용자 메뉴")
     
-    # 평가 검증 모드 vs 실운영 모드 토글
+    # 평가 검증 모드 vs 실운영 모드 vs 실시간 미래 예측 토글
     app_mode = st.radio(
         "사용 모드 선택",
-        options=["과거 검증 모드", "운영 예측 모드(시뮬레이션)"],
-        help="과거 검증: 이미 결과가 나온 Test 데이터의 정답과 모델을 비교합니다. / 운영 예측: 정답을 감추고 오직 모델 예측만 참고합니다."
+        options=["과거 검증 모드", "운영 예측 모드(시뮬레이션)", "🚀 실시간 미래 경주 예측"],
+        help="과거 검증: 이미 결과가 나온 데이터의 정답과 비교 / 운영 예측: 정답 블라인드 / 미래 예측: Stage 05 파이프라인 결과 출력"
     )
     is_past_mode = (app_mode == "과거 검증 모드")
+    is_future_mode = (app_mode == "🚀 실시간 미래 경주 예측")
     
     st.divider()
     
-    st.subheader("🔍 필터 옵션")
-    mod_df = data["modeling_ready"]
-    
-    # 시간 기반으로 정렬된 일자 가져오기
-    available_dates = sorted(list(mod_df['schdRaceDt'].unique()), reverse=True)
-    selected_date = st.selectbox("경주일자 선택", options=available_dates)
-    
-    date_df = mod_df[mod_df['schdRaceDt'] == selected_date]
-    available_races = sorted(list(date_df['race_id'].unique()))
-    selected_race = st.selectbox("경주(Race ID) 선택", options=available_races)
+    if is_future_mode:
+        if os.path.exists(utils.PATH_NEXT_PRED):
+            future_df = pd.read_csv(utils.PATH_NEXT_PRED, encoding="utf-8-sig")
+            available_races = sorted(list(future_df['race_id'].unique()))
+            selected_race = st.selectbox("미래 경주(Race ID) 선택", options=available_races)
+            race_display_df = future_df[future_df['race_id'] == selected_race].copy()
+            st.success(f"미래 예측 데이터 로드 완료: {len(race_display_df)}두")
+        else:
+            st.error("미래 경주 예측 결과 파일이 없습니다. 파이프라인을 먼저 실행해주세요.")
+            st.stop()
+    else:
+        mod_df = data["modeling_ready"]
+        
+        # 시간 기반으로 정렬된 일자 가져오기
+        available_dates = sorted(list(mod_df['schdRaceDt'].unique()), reverse=True)
+        selected_date = st.selectbox("경주일자 선택", options=available_dates)
+        
+        date_df = mod_df[mod_df['schdRaceDt'] == selected_date]
+        available_races = sorted(list(date_df['race_id'].unique()))
+        selected_race = st.selectbox("경주(Race ID) 선택", options=available_races)
 
-    # 선택된 특정 레이스의 출전마 DF (모델 피처 포함)
-    race_full_df = date_df[date_df['race_id'] == selected_race].copy()
-    
-    st.info(f"선택 데이터: {selected_date} / {selected_race}\n출전: {len(race_full_df)}두")
+        # 선택된 특정 레이스의 출전마 DF (모델 피처 포함)
+        race_full_df = date_df[date_df['race_id'] == selected_race].copy()
+        
+        st.info(f"선택 데이터: {selected_date} / {selected_race}\n출전: {len(race_full_df)}두")
 
-# ──────────────────────────────────────────────
-# 3. 모델 추론 
-# ──────────────────────────────────────────────
-# 사용자가 선택한 Race에 대해 on-the-fly 또는 결괏값 로딩
-# Stage 03 에서 산출해 둔 결괏값을 가져올 수도 있으나 
-# 요구사항의 서비스화를 위해 prediction_service.py의 함수를 통과시킵니다.
-pred_race_df = predict_top3(race_full_df, lgb_model)
-if pred_race_df is None or pred_race_df.empty:
-    st.error("현재 선택된 경주를 예측할 수 없습니다.")
-    st.stop()
+if is_future_mode:
+    # 미래 모드에서는 이미 산출된 결과(race_display_df)를 사용
+    pred_race_df = race_display_df.rename(columns={
+        'top3_prob': 'pred_top3_prob',
+        'pred_rank': 'pred_rank_in_race'
+    })
+    # is_top3를 상위 3마리에 대해 마킹
+    pred_race_df['pred_is_top3'] = (pred_race_df['pred_rank_in_race'] <= 3).astype(int)
+else:
+    # 기존 on-the-fly 추론
+    pred_race_df = predict_top3(race_full_df, lgb_model)
+    if pred_race_df is None or pred_race_df.empty:
+        st.error("현재 선택된 경주를 예측할 수 없습니다.")
+        st.stop()
 
 # ──────────────────────────────────────────────
 # 4. 메인 탭 구현 
@@ -108,7 +123,8 @@ with tab1:
     st.table(pd.DataFrame(perf_data))
     
 with tab2:
-    st.header(f"[{selected_date}] Race: {selected_race} 예측 결과")
+    header_text = f"[{selected_race}] 미래 경주 예측 결과" if is_future_mode else f"[{selected_date}] Race: {selected_race} 예측 결과"
+    st.header(header_text)
     
     # 디스플레이용 컬럼 정제
     disp_df = pred_race_df.copy()

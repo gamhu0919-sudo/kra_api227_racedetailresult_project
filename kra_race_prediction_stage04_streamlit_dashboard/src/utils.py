@@ -18,9 +18,11 @@ STAGE04_DIR = os.path.dirname(SRC_DIR)
 PROJECT_ROOT = os.path.dirname(STAGE04_DIR)
 # 이전 스테이지 연동 위치
 STAGE03_DIR = os.path.join(PROJECT_ROOT, "kra_race_prediction_stage03_top3_modeling")
+STAGE05_DIR = os.path.join(PROJECT_ROOT, "kra_race_prediction_stage05_inference_pipeline")
 
 PATH_MODEL = os.path.join(STAGE03_DIR, "models", "lightgbm_top3_baseline.pkl")
 PATH_LGBM_PRED = os.path.join(STAGE03_DIR, "data", "predictions", "lightgbm_top3_predictions.csv")
+PATH_NEXT_PRED = os.path.join(STAGE05_DIR, "data", "output", "next_race_predictions.csv")
 PATH_BASE_PRED = os.path.join(STAGE03_DIR, "data", "predictions", "baseline_rule_predictions.csv")
 PATH_MOD_READY = os.path.join(STAGE03_DIR, "data", "modeling", "modeling_data_ready.csv")
 PATH_CMP_TBL = os.path.join(STAGE03_DIR, "outputs", "tables", "model_comparison_table.csv")
