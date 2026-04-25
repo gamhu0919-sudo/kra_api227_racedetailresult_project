@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import os
 import warnings
 
 # ──────────────────────────────────────────────
@@ -126,27 +127,32 @@ with tab2:
     header_text = f"[{selected_race}] 미래 경주 예측 결과" if is_future_mode else f"[{selected_date}] Race: {selected_race} 예측 결과"
     st.header(header_text)
     
-    # 디스플레이용 컬럼 정제
-    disp_df = pred_race_df.copy()
-    
-    # 예측된 확률은 퍼센트로
-    disp_df['Top3 예상 확률(%)'] = disp_df['pred_top3_prob'].apply(lambda x: f"{x*100:.1f}%")
-    disp_df['모델 예상 순위'] = disp_df['pred_rank_in_race']
-    disp_df['모델 선택(Top3)'] = disp_df['pred_is_top3'].apply(lambda x: "⭐ 선택됨" if x==1 else "")
-    
-    # 화면 표시 컬럼 선별
-    view_cols = [
-        "모델 예상 순위", "pthrHrno", "pthrRatg", "pthrBurdWgt", 
-        "fe_horse_cum_avg_rk", "fe_jcky_cum_top3_rate", "fe_trar_cum_win_rate", 
-        "Top3 예상 확률(%)", "모델 선택(Top3)"
-    ]
-    
-    if is_past_mode and 'target_is_top3' in disp_df.columns:
-        # 정답이 있는 검증 모드
-        disp_df['👑 실제 대상(Top3)'] = disp_df['target_is_top3'].apply(lambda x: "✔️ 적중" if x==1 else "")
-        view_cols.append('👑 실제 대상(Top3)')
+    # 미래 모드와 과거 검증 모드에 따른 표시 컬럼 분리
+    if is_future_mode:
+        candidate_cols = [
+            "모델 예상 순위", "pthrGtno", "pthrHrno", "pthrHrnm", "hrmJckyNm", "hrmTrarNm", 
+            "pthrRatg", "pthrBurdWgt", "fe_horse_cum_avg_rk", "fe_jcky_cum_top3_rate", 
+            "fe_trar_cum_win_rate", "Top3 예상 확률(%)", "모델 선택(Top3)"
+        ]
+        st.info("미래 경주 예측 모드입니다. 실제 결과가 없는 데이터이므로 정답 컬럼은 표시하지 않습니다.")
     else:
-        st.info("운영 예측 모드입니다. 경주 결과(정답)는 블라인드 처리되었습니다.")
+        candidate_cols = [
+            "모델 예상 순위", "pthrHrno", "pthrRatg", "pthrBurdWgt", 
+            "fe_horse_cum_avg_rk", "fe_jcky_cum_top3_rate", "fe_trar_cum_win_rate", 
+            "Top3 예상 확률(%)", "모델 선택(Top3)"
+        ]
+        if 'target_is_top3' in disp_df.columns:
+            disp_df['👑 실제 대상(Top3)'] = disp_df['target_is_top3'].apply(lambda x: "✔️ 적중" if x==1 else "")
+            candidate_cols.append('👑 실제 대상(Top3)')
+        else:
+            st.info("운영 예측 모드입니다. 경주 결과(정답)는 블라인드 처리되었습니다.")
+
+    # 존재하는 컬럼만 선별하여 표시 (KeyError 방지)
+    view_cols = [c for c in candidate_cols if c in disp_df.columns]
+    missing_display_cols = [c for c in candidate_cols if c not in disp_df.columns]
+    
+    if missing_display_cols:
+        st.warning(f"일부 표시 컬럼이 데이터에 없어 제외했습니다: {missing_display_cols}")
         
     final_view = disp_df[view_cols].sort_values("모델 예상 순위")
     final_view = utils.apply_friendly_columns(final_view)
