@@ -1,0 +1,5 @@
+﻿model,winner_hit_rate,top3_hit_rate,ndcg_3,ndcg_5,spearman,rank_mae,uses_odds,brier_win,logloss_win,leakage_safe
+A1_Odds_Rule,0.3473,0.5366,0.8088,0.8153,0.4831,2.4078,Y,,,Y
+A2_NoOdds_Rule,0.2635,0.4491,0.7322,0.7603,0.326,2.7821,Y,,,Y
+B1_LR_NoOdds,0.2635,0.4631,0.7452,0.7719,0.3705,2.6793,N,0.0826,0.2986,Y
+B2_RF_NoOdds,0.2455,0.4711,0.74,0.7604,0.3427,2.7441,N,0.0817,0.291,Y

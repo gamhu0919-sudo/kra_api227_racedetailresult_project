@@ -1,0 +1,16 @@
+{
+  "response": {
+    "header": {
+      "resultCode": "00",
+      "resultMsg": "NORMAL_CODE"
+    },
+    "body": {
+      "items": {
+        "item": []
+      },
+      "pageNo": 1,
+      "numOfRows": 1000,
+      "totalCount": 0
+    }
+  }
+}

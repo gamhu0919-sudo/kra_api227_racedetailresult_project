@@ -1,0 +1,13 @@
+﻿column,reason
+rsutRk,타깃 원본
+target_rank,타깃 파생
+target_is_top3,타깃 파생
+rsutRaceRcd,경주 후 기록 (레이스 타임)
+rsutMargin,경주 후 기록 (마신차)
+rsutRkAdmny,경주 후 기록 (입상 여부)
+rsutRkPurse,경주 후 상금
+rsutQnlaPrice,경주 후 연세가격
+rsutWinPrice,배당금 (결과 후 확정)
+rsutRkRemk,비고 (결과 후)
+rsutRlStrtTim,실제 출발 시각 (결과)
+rsutStrtTimChgRs,출발 시각 변경 사유 (결과)

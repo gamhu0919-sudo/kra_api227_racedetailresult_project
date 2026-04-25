@@ -1,0 +1,4 @@
+﻿비교 쌍,절대 피처,절대 피처 상위33% Top3비율,절대 피처 Lift,상대 피처,상대 피처 경주내1위 Top3비율,상대 피처 Lift,상대피처 우월 여부
+레이팅: 절대값 vs 경주 내 순위,pthrRatg,0.3026,1.069,rating_rank_in_race,0.3023,1.068,절대피처 우월
+기수 승률: 절대값 vs 경주 내 순위,fe_jcky_cum_win_rate,0.3791,1.339,jockey_winrate_rank_in_race,0.4581,1.618,상대피처 우월
+말 평균순위: 절대값 vs 경주 내 순위,fe_horse_cum_avg_rk,0.4014,1.418,horse_avg_rank_rank_in_race,0.4842,1.71,상대피처 우월

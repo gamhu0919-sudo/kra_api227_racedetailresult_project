@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# Data & Logs
+# 원본 대용량 데이터나 불필요한 중간 파일만 제외
+data/raw/
+kra_api227_racedetailresult_project.zip
+logs/*.log
+
+# 대시보드 구동에 필요한 Stage 03 데이터는 명시적으로 포함(허용)
+!kra_race_prediction_stage03_top3_modeling/data/modeling/*.csv
+!kra_race_prediction_stage03_top3_modeling/models/*.pkl
+!kra_race_prediction_stage03_top3_modeling/data/predictions/*.csv
+!kra_race_prediction_stage03_top3_modeling/outputs/tables/*.csv
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

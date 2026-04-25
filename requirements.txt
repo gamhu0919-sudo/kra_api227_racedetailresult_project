@@ -1,0 +1,6 @@
+pandas
+requests
+matplotlib
+koreanize-matplotlib
+xmltodict
+pathlib
