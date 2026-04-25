@@ -12,10 +12,19 @@ from . import utils
 
 @st.cache_resource
 def load_model():
-    """LightGBM 모델 로드"""
+    """LightGBM 모델 로드 및 에러 디버깅"""
     if os.path.exists(utils.PATH_MODEL):
-        model = joblib.load(utils.PATH_MODEL)
-        return model
+        try:
+            model = joblib.load(utils.PATH_MODEL)
+            return model
+        except ModuleNotFoundError as e:
+            st.error(f"❌ 모델 로딩 실패 (모듈 누락): {str(e)}")
+            st.info("이 에러는 모델 학습 시 존재했던 특정 모듈을 배포 환경에서 찾지 못할 때 발생합니다.")
+            # 어떤 모듈인지 추측하게 함
+            return None
+        except Exception as e:
+            st.error(f"❌ 모델 로딩 중 기타 오류 발생: {str(e)}")
+            return None
     else:
         st.error(f"모델 파일이 존재하지 않습니다: {utils.PATH_MODEL}")
         return None
