@@ -1,533 +1,176 @@
-# -*- coding: utf-8 -*-
-"""
-streamlit_app.py - 서울 경마 순위 예측 플랫폼 프로토타입
-실행: streamlit run streamlit_app.py
-
-⚠️ 이 앱은 과거 실적 데이터(2025-03 ~ 2026-03)를 기반으로 한
-   예측 프로토타입입니다. 실제 베팅 또는 투자 판단 책임은 사용자에게 있습니다.
-"""
-
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
-
 import streamlit as st
 import pandas as pd
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
-from pathlib import Path
+import warnings
 
-# ── 페이지 기본 설정 ──────────────────────────────────────────────────────
-st.set_page_config(
-    page_title="서울 경마 순위 예측 플랫폼",
-    page_icon="🏇",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+# ──────────────────────────────────────────────
+# 0. 배포 환경 경로 보정 불필요 (Root 실행)
+# 프로젝트 최상단(root)에서 실행되므로 경로 수정을 전부 들어냈습니다.
+# ──────────────────────────────────────────────
 
-# ── 한글 폰트 ─────────────────────────────────────────────────────────────
-def setup_font():
-    font_candidates = ["Malgun Gothic", "NanumGothic", "AppleGothic", "Gulim"]
-    available = {f.name for f in fm.fontManager.ttflist}
-    for fnt in font_candidates:
-        if fnt in available:
-            matplotlib.rc("font", family=fnt)
-            break
-    matplotlib.rcParams["axes.unicode_minus"] = False
+from kra_race_prediction_stage04_streamlit_dashboard.src import utils
+from kra_race_prediction_stage04_streamlit_dashboard.src.data_loader import load_all_datasets
+from kra_race_prediction_stage04_streamlit_dashboard.src.prediction_service import load_model, predict_top3
+from kra_race_prediction_stage04_streamlit_dashboard.src.feature_view import render_feature_reasoning, render_feature_importance
+from kra_race_prediction_stage04_streamlit_dashboard.src.evaluation_view import render_rule_comparison, render_model_performance, render_error_analysis
 
-setup_font()
+warnings.filterwarnings("ignore")
 
-# ── 경로 설정 ─────────────────────────────────────────────────────────────
-ROOT           = Path(__file__).resolve().parent
-SRC_DIR        = ROOT / "src"
-REPORTS_TABLES = ROOT / "reports" / "GPT" / "outputs" / "tables"
-REPORTS_CHARTS = ROOT / "reports" / "GPT" / "outputs" / "charts"
-DATA_PROCESSED = ROOT / "data" / "processed"
-MODELS_DIR     = ROOT / "models"
+# ──────────────────────────────────────────────
+# 1. 앱 기본 구성 및 상태 로드
+# ──────────────────────────────────────────────
+st.set_page_config(page_title="KRA Top3 Prediction Prototype", layout="wide", page_icon="🐎")
 
-# ── CSS 스타일 ────────────────────────────────────────────────────────────
-st.markdown("""
-<style>
-    .main-title {
-        font-size: 2rem; font-weight: 700;
-        color: #1a1a2e; margin-bottom: 0;
-    }
-    .subtitle { font-size: 0.95rem; color: #555; margin-top: 4px; }
-    .warning-box {
-        background: #fff3cd; border-left: 4px solid #ffc107;
-        padding: 10px 16px; border-radius: 4px;
-        font-size: 0.85rem; color: #856404; margin-bottom: 12px;
-    }
-    .metric-card {
-        background: #f8f9fa; border-radius: 8px;
-        padding: 14px; text-align: center;
-        border: 1px solid #dee2e6;
-    }
-    .metric-value { font-size: 1.5rem; font-weight: 700; color: #2c3e50; }
-    .metric-label { font-size: 0.75rem; color: #6c757d; margin-top: 4px; }
-    .rank-1 { background: #fff9c4; font-weight: bold; }
-    .rank-top3 { background: #e8f5e9; }
-    .badge-noOdds {
-        background: #2196F3; color: white;
-        padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;
-    }
-    .badge-withOdds {
-        background: #FF9800; color: white;
-        padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;
-    }
-</style>
-""", unsafe_allow_html=True)
+utils.render_warning_disclaimer()
 
-# ── 주의문구 ──────────────────────────────────────────────────────────────
-st.markdown("""
-<div class="warning-box">
-⚠️ <strong>주의:</strong>
-이 앱은 <strong>과거 실적 데이터(2025-03 ~ 2026-03)를 기반으로 한 예측 프로토타입</strong>이며,
-<strong>과거 경주 리플레이 기반 예측 데모</strong>입니다.
-실제 미래 경주 예측이 아닙니다. 실제 베팅 또는 투자 판단 책임은 전적으로 사용자에게 있으며,
-이 플랫폼의 제공자는 어떠한 손실에도 책임지지 않습니다.
-</div>
-""", unsafe_allow_html=True)
+st.title("🏇 KRA 경주마 Top3 예측 대시보드 (Prototype)")
 
-# ── 메인 타이틀 ───────────────────────────────────────────────────────────
-st.markdown('<div class="main-title">🏇 서울 경마 순위 예측 플랫폼</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">KRA 서울 경마장 · 과거 경주 리플레이 기반 예측 데모 · 2025-03 ~ 2026-03</div>', unsafe_allow_html=True)
-st.divider()
+# 데이터 & 모델 캐싱 로드
+data = load_all_datasets()
+lgb_model = load_model()
 
-# ── 사이드바 ──────────────────────────────────────────────────────────────
+if data.get("modeling_ready") is None or lgb_model is None:
+    st.error("치명적 오류: 핵심 필수 데이터 셋(또는 모델)을 불러오지 못했습니다. 경로를 확인해주세요.")
+    st.stop()
+
+# ──────────────────────────────────────────────
+# 2. 사이드바 - 모드 및 필터 선택
+# ──────────────────────────────────────────────
 with st.sidebar:
-    st.header("⚙️ 설정")
-    mode = st.radio(
-        "모델 선택",
-        options=["no_odds", "with_odds"],
-        format_func=lambda x: "📊 No-Odds (순수 데이터)" if x == "no_odds" else "💰 With-Odds (배당 포함)",
-        help="No-Odds: 배당 정보 없이 순수 성적 데이터만 사용\nWith-Odds: 시장 배당 정보 포함"
+    st.header("⚙️ 사용자 메뉴")
+    
+    # 평가 검증 모드 vs 실운영 모드 토글
+    app_mode = st.radio(
+        "사용 모드 선택",
+        options=["과거 검증 모드", "운영 예측 모드(시뮬레이션)"],
+        help="과거 검증: 이미 결과가 나온 Test 데이터의 정답과 모델을 비교합니다. / 운영 예측: 정답을 감추고 오직 모델 예측만 참고합니다."
     )
+    is_past_mode = (app_mode == "과거 검증 모드")
+    
     st.divider()
-    page = st.radio(
-        "화면 선택",
-        options=["🏆 메인 예측", "🔬 모델 진단", "📋 데이터 점검"],
-    )
+    
+    st.subheader("🔍 필터 옵션")
+    mod_df = data["modeling_ready"]
+    
+    # 시간 기반으로 정렬된 일자 가져오기
+    available_dates = sorted(list(mod_df['schdRaceDt'].unique()), reverse=True)
+    selected_date = st.selectbox("경주일자 선택", options=available_dates)
+    
+    date_df = mod_df[mod_df['schdRaceDt'] == selected_date]
+    available_races = sorted(list(date_df['race_id'].unique()))
+    selected_race = st.selectbox("경주(Race ID) 선택", options=available_races)
 
-# ── 데이터 로드 함수 ──────────────────────────────────────────────────────
-@st.cache_data(ttl=300)
-def load_predictions(sel_mode: str):
-    """예측 결과 캐시 로드"""
-    candidates = [
-        DATA_PROCESSED / f"final_predictions_{sel_mode}.csv",
-        DATA_PROCESSED / "final_predictions.csv",
-    ]
-    for p in candidates:
-        if p.exists():
-            df = pd.read_csv(p, encoding="utf-8-sig", low_memory=False)
-            df["rcDate"] = df["rcDate"].astype(str)
-            df["rcNo"]   = pd.to_numeric(df["rcNo"], errors="coerce")
-            return df
-    return None
+    # 선택된 특정 레이스의 출전마 DF (모델 피처 포함)
+    race_full_df = date_df[date_df['race_id'] == selected_race].copy()
+    
+    st.info(f"선택 데이터: {selected_date} / {selected_race}\n출전: {len(race_full_df)}두")
 
+# ──────────────────────────────────────────────
+# 3. 모델 추론 
+# ──────────────────────────────────────────────
+# 사용자가 선택한 Race에 대해 on-the-fly 또는 결괏값 로딩
+# Stage 03 에서 산출해 둔 결괏값을 가져올 수도 있으나 
+# 요구사항의 서비스화를 위해 prediction_service.py의 함수를 통과시킵니다.
+pred_race_df = predict_top3(race_full_df, lgb_model)
+if pred_race_df is None or pred_race_df.empty:
+    st.error("현재 선택된 경주를 예측할 수 없습니다.")
+    st.stop()
 
-@st.cache_data
-def load_table(fname: str):
-    p = REPORTS_TABLES / fname
-    if p.exists():
-        return pd.read_csv(p, encoding="utf-8-sig")
-    return None
+# ──────────────────────────────────────────────
+# 4. 메인 탭 구현 
+# ──────────────────────────────────────────────
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    "📂 1. 프로젝트 개요", 
+    "🎯 2. 경주 예측 결과",
+    "💡 3. 예측 근거 설명",
+    "⚖️ 4. 단순 규칙 비교",
+    "📊 5. 모델 성능 요약",
+    "🔍 6. 변수 중요도",
+    "🎯 7. 오류 분석"
+])
 
-
-@st.cache_data
-def load_chart_bytes(fname: str):
-    p = REPORTS_CHARTS / fname
-    if p.exists():
-        return open(p, "rb").read()
-    return None
-
-
-# ── 근거 텍스트 생성 ──────────────────────────────────────────────────────
-def get_reasons(row: pd.Series, sel_mode: str) -> str:
-    reasons = []
-    feat_checks = [
-        ("hr_recent3_avg_rank",  lambda v: f"최근3전 평균 {v:.1f}위" if v <= 4 else None),
-        ("hr_recent3_top3_rate", lambda v: f"최근3전 Top3율 {v*100:.0f}%" if v >= 0.5 else None),
-        ("jk_90d_win_rate",      lambda v: f"기수 90일 승률 {v*100:.1f}%" if v >= 0.12 else None),
-        ("hr_jk_cum_win_rate",   lambda v: f"말-기수 조합 승률 {v*100:.1f}%" if v >= 0.2 else None),
-        ("tr_30d_win_rate",      lambda v: f"조교사 30일 승률 {v*100:.1f}%" if v >= 0.12 else None),
-        ("hr_cum_win_rate",      lambda v: f"누적 승률 {v*100:.1f}%" if v >= 0.18 else None),
-        ("hr_prev1_rank",        lambda v: f"직전 경주 {int(v)}위" if v <= 2 else None),
-        ("hr_rank_trend",        lambda v: "성적 상승 추세" if v < -1 else None),
-    ]
-    if sel_mode == "with_odds":
-        feat_checks.append(("winOdds", lambda v: f"배당 {v:.1f}배 (우위)" if v <= 4 else None))
-
-    for feat, fn in feat_checks:
-        if feat in row.index and pd.notna(row[feat]):
-            txt = fn(float(row[feat]))
-            if txt:
-                reasons.append(txt)
-        if len(reasons) >= 3:
-            break
-
-    if not reasons:
-        reasons.append("데이터 부족")
-    return " / ".join(reasons[:3])
-
-
-# ════════════════════════════════════════════════════════════════
-# 화면 1: 메인 예측 화면
-# ════════════════════════════════════════════════════════════════
-if page == "🏆 메인 예측":
-    st.subheader("🏆 경주별 순위 예측")
-
-    comp_df = load_table("13_model_comparison.csv")
-    if comp_df is not None:
-        target_model = "Ensemble_WithOdds" if mode == "with_odds" else "Ensemble_NoOdds"
-        model_row = comp_df[comp_df["model"] == target_model]
-        if not model_row.empty:
-            win_hr = pd.to_numeric(model_row.iloc[0]["winner_hit_rate"], errors="coerce")
-            top3_hr = pd.to_numeric(model_row.iloc[0]["top3_hit_rate"], errors="coerce")
-            st.info(
-                f"💡 **현재 파이프라인의 전반적인 예측 성공률 (모델: {target_model})**\n\n"
-                f"• **1위 적중률(Winner Hit Rate):** {win_hr * 100:.1f}%\n"
-                f"• **3위 내 적중률(Top3 Hit Rate):** {top3_hr * 100:.1f}%\n\n"
-                f"*경마 산업 특유의 높은 불확실성과 이변, 그리고 모델 학습 시 가장 보수적인 기준(미래 정보 완전 차단)을 적용함에 따라 대다수 단일 경주의 예측은 실제 상위권 결과와 어긋날 확률이 높습니다. 본 화면은 특정 경주의 리플레이 및 지표 보조용으로 참고하십시오.*"
-            )
-
-    preds = load_predictions(mode)
-
-    if preds is None:
-        st.warning("⚠️ 예측 결과 파일이 없습니다. 먼저 파이프라인을 실행하세요.")
-        st.code("python run_pipeline.py", language="bash")
-        st.stop()
-
-    # 날짜 / 경주번호 선택
-    col1, col2, col3 = st.columns([2, 1, 1])
-    with col1:
-        dates = sorted(preds["rcDate"].unique(), reverse=True)
-        sel_date = st.selectbox("📅 경주일 선택", dates)
-
-    with col2:
-        day_df = preds[preds["rcDate"] == sel_date]
-        races  = sorted(day_df["rcNo"].dropna().unique().astype(int).tolist())
-        if not races:
-            st.warning("해당 날짜에 경주 정보가 없습니다.")
-            st.stop()
-        sel_race = st.selectbox("🏁 경주번호", races)
-
-    with col3:
-        show_actual = st.toggle("실제 결과 표시", value=True)
-
-    # 경주 데이터 필터
-    race_df = day_df[day_df["rcNo"] == sel_race].copy()
-    if race_df.empty:
-        st.info("해당 경주 예측 데이터가 없습니다.")
-        st.stop()
-
-    # 예상 순위 정렬
-    if "pred_rank" not in race_df.columns and "final_score" in race_df.columns:
-        race_df["pred_rank"] = race_df["final_score"].rank(ascending=False).astype(int)
-    race_df = race_df.sort_values("pred_rank")
-
-    # 경주 기본 정보
-    st.markdown(f"**{sel_date} | {sel_race}경주**  |  출전두수: **{len(race_df)}두**")
-    badge = '<span class="badge-noOdds">No-Odds</span>' if mode == "no_odds" \
-            else '<span class="badge-withOdds">With-Odds</span>'
-    st.markdown(f"모델: {badge}", unsafe_allow_html=True)
-
-    # 요약 지표
-    win_pred  = race_df.iloc[0]
-    top3_pred = race_df.iloc[:3]
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.metric("🥇 예상 1위", win_pred.get("hrName", "N/A"))
-    with c2:
-        win_p = win_pred.get("win_prob", None)
-        st.metric("1위 확률", f"{win_p:.1%}" if pd.notna(win_p) else "N/A")
-    with c3:
-        top3_p = win_pred.get("top3_prob", None)
-        st.metric("Top3 확률", f"{top3_p:.1%}" if pd.notna(top3_p) else "N/A")
-    with c4:
-        score = win_pred.get("final_score", None)
-        st.metric("종합 Score", f"{score:.3f}" if pd.notna(score) else "N/A")
-
+with tab1:
+    st.header("프로젝트 개요")
+    st.write("본 시스템은 한국마사회(KRA) 서울 경주 데이터를 기반으로 경마 정보를 학습하여 경주마의 순위 3위(Top3) 안착 가능성을 인공지능이 계산하는 **프로토타입 애플리케이션**입니다.")
+    st.markdown("""
+    * **모델 방식**: LightGBM Binary Classifier (경주 내 상위 3머리 선발)
+    * **활용 정보**: 경주 전 이미 공개되는 말, 기수, 조교사의 과거 누적 데이터 및 배정된 레이팅/부담중량 정보
+    """)
+    
     st.divider()
-
-    # 예측 테이블 구성
-    show_cols = {
-        "chulNo":     "출전번호",
-        "hrName":     "말명",
-        "jkName":     "기수",
-        "trName":     "조교사",
-        "pred_rank":  "예상순위",
-        "final_score":"종합Score",
-        "win_prob":   "1위확률",
-        "top3_prob":  "Top3확률",
+    st.subheader("📋 LightGBM 모델 Test-Set 성능 요약 (가이드라인)")
+    
+    # 하드코딩 또는 동적 주입
+    # 요구사항에 명시된 수치 표기
+    perf_data = {
+        "항목": ["Test 경주 수", "LightGBM Precision@3", "LightGBM Hit@3", "무작위 기준선", "말 평균순위 규칙 Precision@3"],
+        "값": ["520", "47.95%", "58.08%", "28.3%", "46.03%"]
     }
-    if show_actual and "ord" in race_df.columns:
-        show_cols["ord"] = "실제순위"
-    if mode == "with_odds" and "winOdds" in race_df.columns:
-        show_cols["winOdds"] = "배당(단승)"
-
-    avail = {k: v for k, v in show_cols.items() if k in race_df.columns}
-    display_df = race_df[list(avail.keys())].rename(columns=avail).copy()
-
-    # 근거 컬럼
-    display_df["예측 근거"] = race_df.apply(lambda r: get_reasons(r, mode), axis=1).values
-
-    # 소수점 포맷
-    for col in ["종합Score", "1위확률", "Top3확률"]:
-        if col in display_df.columns:
-            display_df[col] = pd.to_numeric(display_df[col], errors="coerce").round(3)
-
-    st.dataframe(
-        display_df.reset_index(drop=True),
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "예상순위": st.column_config.NumberColumn(format="%d위"),
-            "1위확률":  st.column_config.ProgressColumn(format="%.3f", min_value=0, max_value=1),
-            "Top3확률": st.column_config.ProgressColumn(format="%.3f", min_value=0, max_value=1),
-        }
-    )
-
-    # 실제 결과와 비교 (show_actual = True 일 때)
-    if show_actual and "ord" in race_df.columns and "실제순위" in display_df.columns:
-        correct_win  = (race_df["pred_rank"] == 1).any() and (race_df[race_df["pred_rank"]==1]["ord"] == 1).any()
-        correct_top3 = (race_df[race_df["pred_rank"] <= 3]["ord"] <= 3).any()
-        col_a, col_b = st.columns(2)
-        with col_a:
-            if correct_win:
-                st.success("✅ 1위 예측 적중!")
-            else:
-                actual_winner = race_df[race_df["ord"]==1]["hrName"].values
-                st.error(f"❌ 1위 예측 빗나감 (실제: {actual_winner[0] if len(actual_winner) else 'N/A'})")
-        with col_b:
-            if correct_top3:
-                st.success("✅ Top3 예측 1마리 이상 적중")
-            else:
-                st.warning("⚠️ Top3 예측 전부 빗나감")
-
-
-# ════════════════════════════════════════════════════════════════
-# 화면 2: 모델 진단 화면
-# ════════════════════════════════════════════════════════════════
-elif page == "🔬 모델 진단":
-    st.subheader("🔬 모델 진단")
-
-    # 모델 비교표
-    st.markdown("#### 📊 모델 성능 비교 (Test Set)")
-    comp = load_table("13_model_comparison.csv")
-    if comp is not None:
-        st.dataframe(comp, use_container_width=True, hide_index=True)
-    else:
-        bl = load_table("10_baseline_results.csv")
-        if bl is not None:
-            st.info("통합 비교표 없음. 베이스라인 결과만 표시합니다.")
-            st.dataframe(bl, use_container_width=True, hide_index=True)
-        else:
-            st.warning("모델 비교표 없음. evaluate.py를 실행하세요.")
-
-    st.divider()
-
-    # 차트 3열 레이아웃
-    c1, c2, c3 = st.columns(3)
-
-    with c1:
-        st.markdown("##### 피처 중요도 (No-Odds)")
-        img = load_chart_bytes("10_feature_importance_no_odds.png")
-        if img:
-            st.image(img, use_container_width=True)
-        else:
-            st.info("평가 파이프라인 실행 후 생성됩니다.")
-
-    with c2:
-        st.markdown("##### 피처 중요도 (With-Odds)")
-        img = load_chart_bytes("11_feature_importance_with_odds.png")
-        if img:
-            st.image(img, use_container_width=True)
-        else:
-            st.info("평가 파이프라인 실행 후 생성됩니다.")
-
-    with c3:
-        st.markdown("##### Calibration 진단")
-        img = load_chart_bytes("12_calibration_plot.png")
-        if img:
-            st.image(img, use_container_width=True)
-        else:
-            st.info("보정 파이프라인 실행 후 생성됩니다.")
-
-    # 월별 성능
-    st.divider()
-    st.markdown("#### 📅 월별 성능 안정성")
-    monthly = load_table("14_monthly_performance.csv")
-    if monthly is not None:
-        st.dataframe(monthly, use_container_width=True, hide_index=True)
-
-        # 월별 차트
-        fig, ax = plt.subplots(figsize=(10, 4))
-        x = range(len(monthly))
-        if "winner_hit_rate" in monthly.columns:
-            ax.plot(x, pd.to_numeric(monthly["winner_hit_rate"], errors="coerce"),
-                    marker="o", label="Winner Hit Rate", color="#2E86AB", linewidth=2)
-        if "top3_hit_rate" in monthly.columns:
-            ax.plot(x, pd.to_numeric(monthly["top3_hit_rate"], errors="coerce"),
-                    marker="s", label="Top3 Hit Rate", color="#A23B72", linewidth=2)
-        ax.set_xticks(list(x))
-        ax.set_xticklabels(monthly["year_month"].values, rotation=30, ha="right")
-        ax.set_title("월별 Hit Rate 추이", fontsize=12, fontweight="bold")
-        ax.set_ylabel("Hit Rate")
-        ax.legend()
-        ax.grid(axis="y", alpha=0.3)
-        plt.tight_layout()
-        st.pyplot(fig)
-        plt.close()
-    else:
-        st.info("월별 성능 데이터 없음.")
-
-    # 모델 비교 차트
-    st.divider()
-    st.markdown("#### 🏅 Model Hit Rate 비교")
-    img = load_chart_bytes("13_model_comparison.png")
-    if img:
-        st.image(img, use_container_width=True)
-
-    # 누설 제거 로그 요약
-    st.divider()
-    st.markdown("#### 🔒 누설 컬럼 제거 로그")
-    col_class = load_table("01_column_classification.csv")
-    if col_class is not None:
-        leak_df = col_class[col_class["group"].str.contains("누설|제거", na=False)]
-        st.dataframe(
-            leak_df[["column_name", "group", "reason"]],
-            use_container_width=True, hide_index=True
-        )
-        st.caption(f"총 {len(leak_df)}개 컬럼 제거/제한")
-
-
-# ════════════════════════════════════════════════════════════════
-# 화면 3: 데이터 점검 화면
-# ════════════════════════════════════════════════════════════════
-elif page == "📋 데이터 점검":
-    st.subheader("📋 데이터 점검")
-
-    # 기본 요약
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.metric("데이터 기간", "2025-03 ~ 2026-03")
-    with c2:
-        st.metric("총 경주 수", "1,150경주")
-    with c3:
-        st.metric("총 출전 레코드", "12,206건")
-    with c4:
-        st.metric("경마장", "서울")
-
-    st.divider()
-
-    # 결측률 상위
-    st.markdown("#### 📉 결측률 상위 컬럼 (상위 20)")
-    miss_df = load_table("02_missing_rate.csv")
-    if miss_df is not None:
-        top_miss = miss_df[miss_df["missing_rate_pct"] > 0].nlargest(20, "missing_rate_pct")
-        st.dataframe(top_miss[["column", "missing_rate_pct", "missing_count", "dtype"]],
-                     use_container_width=True, hide_index=True)
-    else:
-        st.info("data_audit.py 실행 후 생성됩니다.")
-
-    st.divider()
-
-    # 2열 레이아웃
-    col_a, col_b = st.columns(2)
-
-    with col_a:
-        st.markdown("#### 🔴 특수코드(ord≥90) 분포")
-        special_df = load_table("03_special_code_freq.csv")
-        if special_df is not None:
-            st.dataframe(special_df, use_container_width=True, hide_index=True)
-            st.caption("92=실격?, 93=취소?, 94=부상/중도기권?, 95=출전취소? (정확한 의미 정의 확인 필요)")
-
-            # 특수코드 차트
-            img = load_chart_bytes("03_special_code_dist.png")
-            if img:
-                st.image(img, use_container_width=True)
-        else:
-            st.info("data_audit.py 실행 후 생성됩니다.")
-
-    with col_b:
-        st.markdown("#### 📊 경주당 출전두수 분포")
-        img = load_chart_bytes("01_field_size_dist.png")
-        if img:
-            st.image(img, use_container_width=True)
-        else:
-            st.info("data_audit.py 실행 후 생성됩니다.")
-
-    st.divider()
-
-    # 피처 현황
-    st.markdown("#### 🔧 피처 현황")
-    feat_path_no   = Path("./artifacts/feature_list_no_odds.json")
-    feat_path_with = Path("./artifacts/feature_list_with_odds.json")
-
-    col_x, col_y = st.columns(2)
-    with col_x:
-        if feat_path_no.exists():
-            import json
-            with open(feat_path_no) as f:
-                feat_no = json.load(f)
-            st.metric("No-Odds 피처 수", len(feat_no.get("features", [])))
-            with st.expander("피처 목록 보기"):
-                st.write(feat_no.get("features", []))
-        else:
-            st.info("feature_engineering.py 실행 후 생성됩니다.")
-
-    with col_y:
-        if feat_path_with.exists():
-            import json
-            with open(feat_path_with) as f:
-                feat_w = json.load(f)
-            st.metric("With-Odds 피처 수", len(feat_w.get("features", [])))
-            with st.expander("피처 목록 보기"):
-                st.write(feat_w.get("features", []))
-        else:
-            st.info("feature_engineering.py 실행 후 생성됩니다.")
-
-    st.divider()
-
-    # 의미 불명확 컬럼
-    st.markdown("#### ❓ 정의 불명확 컬럼 (처리 보류)")
-    undefined_cols = [
-        {"컬럼명": "chulYn",  "추정 의미": "출전 여부 코드", "처리": "제거(사용 보류)"},
-        {"컬럼명": "differ",  "추정 의미": "불명확",         "처리": "제거(사용 보류)"},
-        {"컬럼명": "owCloth", "추정 의미": "마주복 코드?",   "처리": "제거(사용 보류)"},
-        {"컬럼명": "meet_nm", "추정 의미": "경마장명(100%결측)","처리": "제거"},
-        {"컬럼명": "df",      "추정 의미": "불명확",         "처리": "제거(사용 보류)"},
+    st.table(pd.DataFrame(perf_data))
+    
+with tab2:
+    st.header(f"[{selected_date}] Race: {selected_race} 예측 결과")
+    
+    # 디스플레이용 컬럼 정제
+    disp_df = pred_race_df.copy()
+    
+    # 예측된 확률은 퍼센트로
+    disp_df['Top3 예상 확률(%)'] = disp_df['pred_top3_prob'].apply(lambda x: f"{x*100:.1f}%")
+    disp_df['모델 예상 순위'] = disp_df['pred_rank_in_race']
+    disp_df['모델 선택(Top3)'] = disp_df['pred_is_top3'].apply(lambda x: "⭐ 선택됨" if x==1 else "")
+    
+    # 화면 표시 컬럼 선별
+    view_cols = [
+        "모델 예상 순위", "pthrHrno", "pthrRatg", "pthrBurdWgt", 
+        "fe_horse_cum_avg_rk", "fe_jcky_cum_top3_rate", "fe_trar_cum_win_rate", 
+        "Top3 예상 확률(%)", "모델 선택(Top3)"
     ]
-    st.dataframe(pd.DataFrame(undefined_cols), use_container_width=True, hide_index=True)
-
-    st.divider()
-
-    # 컬럼 분류표
-    st.markdown("#### 📑 컬럼 위험도 분류표")
-    col_class = load_table("01_column_classification.csv")
-    if col_class is not None:
-        group_filter = st.multiselect(
-            "그룹 필터",
-            options=col_class["group"].unique().tolist(),
-            default=col_class["group"].unique().tolist()
-        )
-        filtered = col_class[col_class["group"].isin(group_filter)]
-        st.dataframe(filtered, use_container_width=True, hide_index=True)
-        st.caption(f"총 {len(filtered)}개 컬럼 표시 / 전체 {len(col_class)}개")
+    
+    if is_past_mode and 'target_is_top3' in disp_df.columns:
+        # 정답이 있는 검증 모드
+        disp_df['👑 실제 대상(Top3)'] = disp_df['target_is_top3'].apply(lambda x: "✔️ 적중" if x==1 else "")
+        view_cols.append('👑 실제 대상(Top3)')
     else:
-        st.info("data_audit.py 실행 후 생성됩니다.")
+        st.info("운영 예측 모드입니다. 경주 결과(정답)는 블라인드 처리되었습니다.")
+        
+    final_view = disp_df[view_cols].sort_values("모델 예상 순위")
+    final_view = utils.apply_friendly_columns(final_view)
+    
+    st.dataframe(final_view, use_container_width=True, hide_index=True)
 
-    # 월별 경주 분포
-    st.divider()
-    st.markdown("#### 📅 월별 경주 분포")
-    race_stats = load_table("04_race_stats.csv")
-    if race_stats is not None:
-        st.dataframe(race_stats, use_container_width=True, hide_index=True)
-        img = load_chart_bytes("02_monthly_race_count.png")
-        if img:
-            st.image(img, use_container_width=True)
+with tab3:
+    st.header("예측 근거 (Feature Justification)")
+    st.markdown("특정 말의 세부 역량(상대적 우위 등)을 조회하여 모델의 판단 사유를 이해합니다.")
+    
+    sorted_df = pred_race_df.sort_values("pred_top3_prob", ascending=False)
+    horse_opts = sorted_df['pthrHrno'].astype(str).tolist()
+    
+    if horse_opts:
+        sel_hrno = st.selectbox("분석 대상 말 출전번호 선택", options=horse_opts)
+        sel_row = pred_race_df[pred_race_df['pthrHrno'].astype(str) == sel_hrno]
+        render_feature_reasoning(sel_row)
     else:
-        st.info("data_audit.py 실행 후 생성됩니다.")
+        st.write("해당 경주 정보가 부족합니다.")
+
+with tab4:
+    # 룰 엔진 데이터는 data['rule_pred'] 에서 조회 
+    rule_df = data.get("rule_pred", pd.DataFrame())
+    lgbm_df = data.get("lgbm_pred", pd.DataFrame())
+    
+    if not isinstance(rule_df, pd.DataFrame) or rule_df.empty:
+        st.warning("단순 규칙 파일(baseline_rule_predictions.csv)을 찾을 수 없습니다.")
+    else:
+        render_rule_comparison(rule_df, lgbm_df, selected_race, is_past_mode)
+
+with tab5:
+    render_model_performance(data.get("eval_table", pd.DataFrame()))
+
+with tab6:
+    render_feature_importance(data.get("feature_importances", pd.DataFrame()))
+
+with tab7:
+    render_error_analysis(
+        data.get("err_good", pd.DataFrame()),
+        data.get("err_bad", pd.DataFrame()),
+        data.get("err_dist", pd.DataFrame()),
+        data.get("err_cls", pd.DataFrame())
+    )

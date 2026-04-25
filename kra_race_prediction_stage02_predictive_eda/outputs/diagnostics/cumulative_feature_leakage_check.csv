@@ -1,6 +1,0 @@
-﻿feature,entity,n_total_records,n_invalid_range,pct_invalid_range,n_entities,first_race_zero_count,first_race_zero_pct,entity_std_mean,pct_entity_zero_std,leakage_suspect_count,verdict,verdict_code,reason
-fe_horse_cum_win_rate,말,36887,0,0.0,3521,3521,100.0,0.0698,49.85,0,재계산필요,RECOMPUTE,시간 변동없는 엔티티 49.85% — 고정값 의심
-fe_horse_cum_avg_rk,말,36887,485,1.31,3521,0,0.0,3.2331,1.52,0,사용가능,OK,구조적 누수 미탐지
-fe_jcky_cum_win_rate,기수,36887,0,0.0,146,93,63.7,0.0285,20.44,15,재계산필요,RECOMPUTE,첫 출전 당일 결과 포함 의심 15건
-fe_jcky_cum_top3_rate,기수,36887,0,0.0,146,69,47.26,0.0708,11.68,0,재계산필요,RECOMPUTE,첫출전 0 비율 47.26% — 이전 경주 포함 의심
-fe_trar_cum_win_rate,조교사,36887,0,0.0,94,87,92.55,0.0347,22.08,1,사용가능,OK,구조적 누수 미탐지
