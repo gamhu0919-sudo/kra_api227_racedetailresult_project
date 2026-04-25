@@ -1,6 +1,8 @@
-pandas
-requests
-matplotlib
-koreanize-matplotlib
-xmltodict
-pathlib
+streamlit>=1.35.0
+pandas>=2.0.0
+numpy>=1.24.0
+lightgbm>=4.2.0
+joblib>=1.3.0
+plotly>=5.18.0
+matplotlib>=3.8.0
+joblib
