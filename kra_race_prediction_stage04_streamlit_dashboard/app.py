@@ -1,6 +1,24 @@
 import streamlit as st
 import pandas as pd
 import warnings
+import sys
+import os
+
+# ──────────────────────────────────────────────
+# 0. 배포 환경 경로 보정 (Streamlit Cloud 대응)
+# ──────────────────────────────────────────────
+# 현재 스크립트(app.py)의 디렉토리를 path의 최우선 순위로 설정하여 
+# 하위 src 폴더가 다른 stage의 src와 겹치지 않게 함
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+if CURRENT_DIR not in sys.path:
+    sys.path.insert(0, CURRENT_DIR)
+
+# 모델이 학습 시점에 참조했던 'config' 모듈의 위치(Stage 03)도 경로에 추가
+# (Pickle 로딩 시 발생하는 ModuleNotFoundError 방지)
+PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
+STAGE03_SRC = os.path.join(PROJECT_ROOT, "kra_race_prediction_stage03_top3_modeling", "src")
+if STAGE03_SRC not in sys.path:
+    sys.path.append(STAGE03_SRC)
 
 from src import utils
 from src.data_loader import load_all_datasets
