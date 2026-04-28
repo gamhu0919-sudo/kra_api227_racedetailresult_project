@@ -127,6 +127,17 @@ with tab2:
     header_text = f"[{selected_race}] 미래 경주 예측 결과" if is_future_mode else f"[{selected_date}] Race: {selected_race} 예측 결과"
     st.header(header_text)
     
+    # 표시용 데이터프레임 가공
+    disp_df = pred_race_df.copy()
+    
+    # 필요한 표시용 컬럼 생성 (candidate_cols에서 참조하는 이름들)
+    if 'pred_rank_in_race' in disp_df.columns:
+        disp_df['모델 예상 순위'] = disp_df['pred_rank_in_race']
+    if 'pred_top3_prob' in disp_df.columns:
+        disp_df['Top3 예상 확률(%)'] = (disp_df['pred_top3_prob'] * 100).round(1)
+    if 'pred_is_top3' in disp_df.columns:
+        disp_df['모델 선택(Top3)'] = disp_df['pred_is_top3'].apply(lambda x: "✅ 선택" if x == 1 else "")
+
     # 미래 모드와 과거 검증 모드에 따른 표시 컬럼 분리
     if is_future_mode:
         candidate_cols = [
