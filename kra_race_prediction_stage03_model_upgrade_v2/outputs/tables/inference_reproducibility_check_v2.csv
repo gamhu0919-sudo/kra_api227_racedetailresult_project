@@ -1,0 +1,54 @@
+﻿feature,source,reproducible,required_input,required_reference
+fe_horse_cum_avg_rk,Historical Stats,Yes,pthrHrno,Horse Cumulative Stats Table
+fe_track_humidity,Unknown,Yes,None,None
+fe_horse_cum_adj_rank_score_mean,Historical Stats,Yes,pthrHrno,Horse Cumulative Stats Table
+fe_horse_recent5_avg_rank,Historical Stats (Rolling),Yes,pthrHrno,Horse Historical Stats Table
+fe_horse_recent3_win_rate,Historical Stats (Rolling),Yes,pthrHrno,Horse Historical Stats Table
+fe_season,Unknown,Yes,None,None
+fe_ratg_per_weight,Unknown,Yes,None,None
+fe_jcky_cum_win_rate,Unknown,Yes,None,None
+fe_month,Unknown,Yes,None,None
+recent3_adj_rank_score_mean_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+recent5_avg_rank_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+fe_horse_recent5_win_rate,Historical Stats (Rolling),Yes,pthrHrno,Horse Historical Stats Table
+fe_horse_dist_class_perf_final,Unknown,Yes,None,None
+fe_horse_race_count,Unknown,Yes,None,None
+rating_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+fe_horse_recent5_top3_rate,Historical Stats (Rolling),Yes,pthrHrno,Horse Historical Stats Table
+fe_horse_recent3_avg_rank,Historical Stats (Rolling),Yes,pthrHrno,Horse Historical Stats Table
+recent3_avg_rank_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+fe_horse_cum_win_rate,Historical Stats,Yes,pthrHrno,Horse Cumulative Stats Table
+days_since_last_race_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+recent3_top3_rate_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+recent5_adj_rank_score_mean_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+fe_horse_same_dist_count,Unknown,Yes,None,None
+fe_horse_cum_adj_rank_score_median,Historical Stats,Yes,pthrHrno,Horse Cumulative Stats Table
+jockey_winrate_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+jockey_top3_rate_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+fe_horse_recent3_adj_rank_score_mean,Historical Stats (Rolling),Yes,pthrHrno,Horse Historical Stats Table
+fe_horse_recent3_top3_rate,Historical Stats (Rolling),Yes,pthrHrno,Horse Historical Stats Table
+horse_winrate_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+fe_horse_rest_type,Unknown,Yes,None,None
+fe_horse_class_top3_rate,Unknown,Yes,None,None
+fe_horse_same_dist_class_count,Unknown,Yes,None,None
+fe_horse_dist_group_top3_rate,Unknown,Yes,None,None
+fe_horse_dist_class_avg_adj_rank,Unknown,Yes,None,None
+fe_horse_weight,Unknown,Yes,None,None
+recent5_top3_rate_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+fe_horse_days_since_last_race,Historical Date Diff,Yes,"pthrHrno, current race date",Horse Last Race Date
+weight_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+fe_horse_class_avg_adj_rank,Unknown,Yes,None,None
+horse_experience_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+cum_adj_rank_score_mean_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+fe_race_dist,Unknown,Yes,None,None
+horse_avg_rank_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+fe_horse_same_class_count,Unknown,Yes,None,None
+fe_horse_recent5_adj_rank_score_mean,Historical Stats (Rolling),Yes,pthrHrno,Horse Historical Stats Table
+rating_pct_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+dist_class_perf_final_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+fe_weight_diff,Unknown,Yes,None,None
+fe_horse_cum_adj_rank_score_std,Historical Stats,Yes,pthrHrno,Horse Cumulative Stats Table
+trainer_winrate_rank_in_race,Relative Score in Race,Yes,pthrHrno (for stats),Current Race Entries + Historical Stats
+fe_jcky_cum_top3_rate,Unknown,Yes,None,None
+fe_trar_cum_win_rate,Unknown,Yes,None,None
+fe_horse_dist_group_avg_adj_rank,Unknown,Yes,None,None

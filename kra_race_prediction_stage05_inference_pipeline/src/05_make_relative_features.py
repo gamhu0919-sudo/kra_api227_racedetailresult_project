@@ -17,6 +17,16 @@ def generate_relative_features(df):
         "horse_avg_rank_rank_in_race": ("fe_horse_cum_avg_rk", True), # 낮은게 좋음(1등)
         "horse_winrate_rank_in_race": ("fe_horse_cum_win_rate", False),
         "horse_experience_rank_in_race": ("fe_horse_race_count", False),
+        # v2 신규 상대 피처
+        "cum_adj_rank_score_mean_rank_in_race": ("fe_horse_cum_adj_rank_score_mean", False),
+        "recent3_adj_rank_score_mean_rank_in_race": ("fe_horse_recent3_adj_rank_score_mean", False),
+        "recent5_adj_rank_score_mean_rank_in_race": ("fe_horse_recent5_adj_rank_score_mean", False),
+        "recent3_top3_rate_rank_in_race": ("fe_horse_recent3_top3_rate", False),
+        "recent5_top3_rate_rank_in_race": ("fe_horse_recent5_top3_rate", False),
+        "dist_class_perf_final_rank_in_race": ("fe_horse_dist_class_perf_final", False),
+        "recent3_avg_rank_rank_in_race": ("fe_horse_recent3_avg_rank", True),
+        "recent5_avg_rank_rank_in_race": ("fe_horse_recent5_avg_rank", True),
+        "days_since_last_race_rank_in_race": ("fe_horse_days_since_last_race", True),
     }
 
     for col, args in rules.items():

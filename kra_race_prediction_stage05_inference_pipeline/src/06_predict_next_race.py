@@ -49,7 +49,12 @@ def main():
     # 5. 예측 실행
     X_inference = df[expected_features].copy()
     
-    # 범주형 변환 (학습 시와 동일하게)
+    # 범주형 변환 (Model v2 학습 시와 동일하게 factorize 처리)
+    for col in ['sex', 'fe_horse_rest_type', 'dist_group', 'race_class']:
+        if col in X_inference.columns:
+            X_inference[col] = pd.factorize(X_inference[col])[0]
+    
+    # 그 외 비수치형은 category로 변환
     for col in X_inference.columns:
         if not pd.api.types.is_numeric_dtype(X_inference[col]):
             X_inference[col] = X_inference[col].astype('category')

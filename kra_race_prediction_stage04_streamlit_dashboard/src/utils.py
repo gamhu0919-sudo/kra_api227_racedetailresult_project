@@ -16,23 +16,25 @@ SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 STAGE04_DIR = os.path.dirname(SRC_DIR)
 # 프로젝트 루트
 PROJECT_ROOT = os.path.dirname(STAGE04_DIR)
-# 이전 스테이지 연동 위치
-STAGE03_DIR = os.path.join(PROJECT_ROOT, "kra_race_prediction_stage03_top3_modeling")
+# 이전 스테이지 연계 위치
+STAGE03_DIR = os.path.join(PROJECT_ROOT, "kra_race_prediction_stage03_model_upgrade_v2")
 STAGE05_DIR = os.path.join(PROJECT_ROOT, "kra_race_prediction_stage05_inference_pipeline")
 
-PATH_MODEL = os.path.join(STAGE03_DIR, "models", "lightgbm_top3_baseline.pkl")
-PATH_LGBM_PRED = os.path.join(STAGE03_DIR, "data", "predictions", "lightgbm_top3_predictions.csv")
+PATH_MODEL = os.path.join(STAGE03_DIR, "models", "lgbm_top3_feature_v2.pkl")
+PATH_LGBM_PRED = os.path.join(STAGE03_DIR, "data", "predictions", "lgbm_top3_feature_v2_predictions.csv")
 PATH_NEXT_PRED = os.path.join(STAGE05_DIR, "data", "output", "next_race_predictions.csv")
-PATH_BASE_PRED = os.path.join(STAGE03_DIR, "data", "predictions", "baseline_rule_predictions.csv")
-PATH_MOD_READY = os.path.join(STAGE03_DIR, "data", "modeling", "modeling_data_ready.csv")
-PATH_CMP_TBL = os.path.join(STAGE03_DIR, "outputs", "tables", "model_comparison_table.csv")
-PATH_FI = os.path.join(STAGE03_DIR, "outputs", "tables", "lightgbm_feature_importance.csv")
+PATH_BASE_PRED = os.path.join(PROJECT_ROOT, "kra_race_prediction_stage03_top3_modeling", "data", "predictions", "baseline_rule_predictions.csv")
+PATH_MOD_READY = os.path.join(STAGE03_DIR, "data", "modeling", "modeling_data_v2_with_preds.csv")
+PATH_CMP_TBL = os.path.join(STAGE03_DIR, "outputs", "tables", "model_v2_comparison_table.csv")
+PATH_FI = os.path.join(STAGE03_DIR, "outputs", "tables", "feature_importance_v2.csv")
 
-# 에러 분석 파일 경로들
-PATH_ERR_GOOD = os.path.join(STAGE03_DIR, "outputs", "tables", "good_prediction_races.csv")
-PATH_ERR_BAD = os.path.join(STAGE03_DIR, "outputs", "tables", "bad_prediction_races.csv")
-PATH_ERR_DIST = os.path.join(STAGE03_DIR, "outputs", "tables", "error_analysis_by_distance.csv")
-PATH_ERR_CLS = os.path.join(STAGE03_DIR, "outputs", "tables", "error_analysis_by_class.csv")
+# 에러 분석 파일 경로들 (Baseline 경로 유지 또는 v2 경로로 업데이트 - 여기서는 v2로 시도하되 없으면 baseline)
+# 일단 v2 폴더에 없으므로 baseline 경로를 명시적으로 유지
+STAGE03_BASELINE_DIR = os.path.join(PROJECT_ROOT, "kra_race_prediction_stage03_top3_modeling")
+PATH_ERR_GOOD = os.path.join(STAGE03_BASELINE_DIR, "outputs", "tables", "good_prediction_races.csv")
+PATH_ERR_BAD = os.path.join(STAGE03_BASELINE_DIR, "outputs", "tables", "bad_prediction_races.csv")
+PATH_ERR_DIST = os.path.join(STAGE03_BASELINE_DIR, "outputs", "tables", "error_analysis_by_distance.csv")
+PATH_ERR_CLS = os.path.join(STAGE03_BASELINE_DIR, "outputs", "tables", "error_analysis_by_class.csv")
 
 
 # ──────────────────────────────────────────────

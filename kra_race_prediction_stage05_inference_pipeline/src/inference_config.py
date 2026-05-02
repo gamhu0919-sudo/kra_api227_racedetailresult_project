@@ -26,7 +26,8 @@ PATH_FE_RELATIVE = os.path.join(DATA_OUTPUT, "inference_features_relative.csv")
 PATH_PREDICTIONS = os.path.join(DATA_OUTPUT, "next_race_predictions.csv")
 
 # 모델 경로
-PATH_MODEL = os.path.join(STAGE03_ROOT, "models", "lightgbm_top3_baseline.pkl")
+STAGE03_V2_ROOT = os.path.join(ROOT_DIR, "kra_race_prediction_stage03_model_upgrade_v2")
+PATH_MODEL = os.path.join(STAGE03_V2_ROOT, "models", "lgbm_top3_feature_v2.pkl")
 
 # 공통 함수
 def log(msg):

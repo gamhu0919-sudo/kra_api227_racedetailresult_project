@@ -119,7 +119,7 @@ with tab1:
     # 요구사항에 명시된 수치 표기
     perf_data = {
         "항목": ["Test 경주 수", "LightGBM Precision@3", "LightGBM Hit@3", "무작위 기준선", "말 평균순위 규칙 Precision@3"],
-        "값": ["520", "47.95%", "58.08%", "28.3%", "46.03%"]
+        "값": ["520", "51.60%", "93.27%", "28.3%", "46.03%"]
     }
     st.table(pd.DataFrame(perf_data))
     
