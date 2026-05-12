@@ -4,7 +4,6 @@ prediction_service.py
 LightGBM 예측 모델 싱글턴 로더 및 추론 파이프라인
 """
 
-import os
 import joblib
 import pandas as pd
 import streamlit as st
@@ -13,7 +12,7 @@ from . import utils
 @st.cache_resource
 def load_model():
     """LightGBM 모델 로드 및 에러 디버깅"""
-    if os.path.exists(utils.PATH_MODEL):
+    if utils.PATH_MODEL.exists():
         try:
             model = joblib.load(utils.PATH_MODEL)
             return model
@@ -26,7 +25,7 @@ def load_model():
             st.error(f"❌ 모델 로딩 중 기타 오류 발생: {str(e)}")
             return None
     else:
-        st.error(f"모델 파일이 존재하지 않습니다: {utils.PATH_MODEL}")
+        st.warning(f"모델 파일이 존재하지 않습니다: {utils.rel_path(utils.PATH_MODEL)}")
         return None
 
 def validate_features(df, model_features):
@@ -53,7 +52,7 @@ def predict_top3(df_race, model):
     특정 race_id 의 출전마 데이터(df_race)를 받아
     pred_top3_prob, pred_rank_in_race, pred_is_top3 열을 산출하여 반환.
     """
-    if len(df_race) == 0:
+    if model is None or len(df_race) == 0:
         return df_race
 
     # 모델이 학습한 피처 구성 로드 (model_features) - LGBM 속성 사용
