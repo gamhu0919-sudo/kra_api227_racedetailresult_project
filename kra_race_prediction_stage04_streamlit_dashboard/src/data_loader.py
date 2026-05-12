@@ -157,11 +157,33 @@ def normalize_walk_forward_metrics(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def resolve_historical_prediction_path() -> tuple[Path, str]:
+    """날짜별 과거 예측 화면에 사용할 수 있는 최우선 CSV를 반환한다.
+
+    저장소에는 모델 pkl과 data/predictions CSV가 없는 경우가 있으므로, 실제로
+    존재하는 v2 Walk-forward 경주별 예측 산출물을 fallback으로 사용한다.
+    """
+    candidates = [
+        (utils.PATH_LGBM_PRED, "v2 예측 결과"),
+        (utils.PATH_MOD_READY, "v2 모델링 데이터"),
+        (utils.PATH_V2_WF_RACE_PREDS, "v2 Walk-forward 경주별 예측 결과"),
+        (utils.PATH_WF_PREDS, "Stage06 전체 Walk-forward 예측 결과"),
+    ]
+    for path, label in candidates:
+        if path.exists():
+            return path, label
+    return utils.PATH_LGBM_PRED, "v2 예측 결과"
+
+
 def load_all_datasets() -> dict:
     datasets: dict = {"statuses": {}}
+    historical_path, historical_label = resolve_historical_prediction_path()
+    datasets["historical_prediction_source"] = historical_label
+    datasets["historical_prediction_path"] = historical_path
     specs = {
         "modeling_ready": (utils.PATH_MOD_READY, False, "v2 모델링 데이터"),
         "lgbm_pred": (utils.PATH_LGBM_PRED, False, "v2 예측 결과"),
+        "historical_predictions": (historical_path, False, historical_label),
         "future_pred": (utils.PATH_NEXT_PRED, False, "Stage05 미래 예측 결과"),
         "eval_table_raw": (utils.PATH_CMP_TBL, True, "v2 성능 비교표"),
         "baseline_perf_raw": (utils.PATH_BASE_PERF, False, "baseline 성능표"),

@@ -76,7 +76,7 @@ kra_race_prediction_stage06_walk_forward_backtest/reports/walk_forward_report.md
 8. 오류 분석
 9. 데이터/파일 상태 점검
 
-각 탭은 필요한 CSV 또는 모델 파일이 누락되어도 앱 전체를 중단하지 않고, 해당 기능의 제한 사항을 안내합니다.
+각 탭은 필요한 CSV 또는 모델 파일이 누락되어도 앱 전체를 중단하지 않고, 해당 기능의 제한 사항을 안내합니다. 특히 v2 모델 pkl이나 `data/predictions/lgbm_top3_feature_v2_predictions.csv`가 없어도 `outputs/tables/walk_forward_race_predictions.csv`를 fallback으로 사용해 날짜별 과거 예측 결과를 확인할 수 있습니다.
 
 ## 📂 핵심 산출물
 

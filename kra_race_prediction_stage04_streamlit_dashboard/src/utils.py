@@ -28,6 +28,7 @@ PATH_MOD_READY = STAGE03_V2_DIR / "data" / "modeling" / "modeling_data_v2_with_p
 PATH_LGBM_PRED = STAGE03_V2_DIR / "data" / "predictions" / "lgbm_top3_feature_v2_predictions.csv"
 PATH_CMP_TBL = STAGE03_V2_DIR / "outputs" / "tables" / "model_v2_comparison_table.csv"
 PATH_FI = STAGE03_V2_DIR / "outputs" / "tables" / "feature_importance_v2.csv"
+PATH_V2_WF_RACE_PREDS = STAGE03_V2_DIR / "outputs" / "tables" / "walk_forward_race_predictions.csv"
 PATH_V2_ERR_GOOD = STAGE03_V2_DIR / "outputs" / "tables" / "good_prediction_races_v2.csv"
 PATH_V2_ERR_BAD = STAGE03_V2_DIR / "outputs" / "tables" / "bad_prediction_races_v2.csv"
 PATH_V2_ERR_DIST = STAGE03_V2_DIR / "outputs" / "tables" / "error_analysis_by_distance_v2.csv"
@@ -62,6 +63,7 @@ CORE_FILE_SPECS = [
     FileSpec("v2_model", "v2 모델 파일", PATH_MODEL, False, "v2 예측 모델 로딩"),
     FileSpec("v2_modeling_data", "v2 모델링 데이터", PATH_MOD_READY, False, "과거 검증 모드"),
     FileSpec("v2_predictions", "v2 예측 결과", PATH_LGBM_PRED, False, "과거 예측 결과 표시"),
+    FileSpec("v2_walk_forward_race_predictions", "v2 Walk-forward 경주별 예측 결과", PATH_V2_WF_RACE_PREDS, True, "날짜별 과거 예측 결과 표시 fallback"),
     FileSpec("v2_comparison", "v2 성능 비교표", PATH_CMP_TBL, True, "v2 모델 성능 요약"),
     FileSpec("v2_feature_importance", "v2 변수 중요도", PATH_FI, True, "변수 중요도 탭"),
     FileSpec("stage05_next_predictions", "Stage05 미래 예측 결과", PATH_NEXT_PRED, False, "미래 예측 모드"),

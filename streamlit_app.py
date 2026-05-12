@@ -25,7 +25,7 @@ st.title("🏇 KRA 경주마 Top3 예측 대시보드")
 st.caption("v2 모델 산출물과 Stage06 Walk-forward 검증 결과를 통합해 보여주는 분석용 프로토타입입니다.")
 
 DATA = load_all_datasets()
-MODEL = load_model()
+MODEL = load_model() if utils.PATH_MODEL.exists() else None
 
 
 def _status_message(status: dict) -> None:
@@ -45,14 +45,18 @@ def _status_message(status: dict) -> None:
 
 def _normalize_prediction_columns(df: pd.DataFrame) -> pd.DataFrame:
     work = df.copy()
-    if "pred_top3_prob" not in work.columns and "top3_prob" in work.columns:
-        work["pred_top3_prob"] = work["top3_prob"]
+    if "pred_top3_prob" not in work.columns:
+        for prob_col in ["top3_prob", "prob", "pred_prob", "prediction", "score"]:
+            if prob_col in work.columns:
+                work["pred_top3_prob"] = pd.to_numeric(work[prob_col], errors="coerce")
+                break
     if "pred_rank_in_race" not in work.columns and "pred_rank" in work.columns:
         work["pred_rank_in_race"] = work["pred_rank"]
     if "pred_rank_in_race" not in work.columns and "pred_top3_prob" in work.columns:
         work["pred_rank_in_race"] = work.groupby("race_id")["pred_top3_prob"].rank(ascending=False, method="min") if "race_id" in work.columns else work["pred_top3_prob"].rank(ascending=False, method="min")
     if "pred_is_top3" not in work.columns and "pred_rank_in_race" in work.columns:
-        work["pred_is_top3"] = (pd.to_numeric(work["pred_rank_in_race"], errors="coerce") <= 3).astype(int)
+        rank = pd.to_numeric(work["pred_rank_in_race"], errors="coerce")
+        work["pred_is_top3"] = (rank <= 3).fillna(False).astype(int)
     for col in ["target_is_top3", "is_top3"]:
         if col in work.columns:
             work["actual_top3"] = work[col]
@@ -61,10 +65,14 @@ def _normalize_prediction_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _available_prediction_source() -> tuple[pd.DataFrame, str]:
-    for key, label in [("lgbm_pred", "v2 예측 결과"), ("modeling_ready", "v2 모델링 데이터"), ("future_pred", "Stage05 미래 예측 결과")]:
+    for key, label in [
+        ("lgbm_pred", "v2 예측 결과"),
+        ("modeling_ready", "v2 모델링 데이터"),
+        ("historical_predictions", DATA.get("historical_prediction_source", "저장된 경주별 예측 결과")),
+    ]:
         df = DATA.get(key, pd.DataFrame())
         if isinstance(df, pd.DataFrame) and not df.empty:
-            return _normalize_prediction_columns(df), label
+            return _normalize_prediction_columns(df), str(label)
     return pd.DataFrame(), ""
 
 
@@ -102,9 +110,11 @@ def _render_prediction_table(df: pd.DataFrame, mode: str) -> None:
     if "pred_rank_in_race" in work.columns:
         work["모델 예상 순위"] = pd.to_numeric(work["pred_rank_in_race"], errors="coerce")
     if "pred_is_top3" in work.columns:
-        work["Top3 예상"] = work["pred_is_top3"].apply(lambda x: "🏅 Top3" if int(x) == 1 else "")
+        pred_flag = pd.to_numeric(work["pred_is_top3"], errors="coerce").fillna(0).astype(int)
+        work["Top3 예상"] = pred_flag.apply(lambda x: "🏅 Top3" if x == 1 else "")
     if "actual_top3" in work.columns and mode == "historical":
-        work["실제 Top3 여부"] = work["actual_top3"].apply(lambda x: "✅ 실제 Top3" if int(x) == 1 else "")
+        actual_flag = pd.to_numeric(work["actual_top3"], errors="coerce").fillna(0).astype(int)
+        work["실제 Top3 여부"] = actual_flag.apply(lambda x: "✅ 실제 Top3" if x == 1 else "")
     elif mode == "historical":
         st.info("실제 결과 컬럼이 없어 정답 비교 없이 예측 결과만 표시합니다.")
 
@@ -176,6 +186,8 @@ def render_race_predictions() -> None:
             st.warning("과거 검증용 v2 예측/모델링 데이터가 없습니다. 데이터 상태 점검 탭에서 누락 파일을 확인하세요.")
             return
         st.caption(f"사용 데이터: {source}")
+        if MODEL is None:
+            st.info("모델 파일이 없어도 저장된 예측 CSV를 사용해 날짜별 예측 결과를 표시합니다.")
         _render_prediction_table(_filter_race_ui(pred_df, "hist"), "historical")
 
 
