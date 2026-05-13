@@ -7,7 +7,12 @@ import plotly.express as px
 import streamlit as st
 
 from kra_race_prediction_stage04_streamlit_dashboard.src import utils
-from kra_race_prediction_stage04_streamlit_dashboard.src.data_loader import first_existing_column, load_all_datasets
+from kra_race_prediction_stage04_streamlit_dashboard.src.data_loader import (
+    first_existing_column,
+    load_all_datasets,
+    resolve_historical_prediction_path,
+    safe_read_csv,
+)
 from kra_race_prediction_stage04_streamlit_dashboard.src.evaluation_view import (
     render_baseline_vs_v2,
     render_error_analysis,
@@ -23,6 +28,12 @@ st.set_page_config(page_title="KRA Top3 Prediction Prototype", layout="wide", pa
 utils.render_warning_disclaimer()
 st.title("🏇 KRA 경주마 Top3 예측 대시보드")
 st.caption("v2 모델 산출물과 Stage06 Walk-forward 검증 결과를 통합해 보여주는 분석용 프로토타입입니다.")
+
+with st.sidebar:
+    if st.button("🔄 데이터 캐시 새로고침", help="CSV 파일을 새로 추가/수정했는데 화면에 반영되지 않을 때 사용하세요."):
+        st.cache_data.clear()
+        st.cache_resource.clear()
+        st.rerun()
 
 DATA = load_all_datasets()
 MODEL = load_model() if utils.PATH_MODEL.exists() else None
@@ -64,6 +75,15 @@ def _normalize_prediction_columns(df: pd.DataFrame) -> pd.DataFrame:
     return work
 
 
+def _load_historical_predictions_directly() -> tuple[pd.DataFrame, str]:
+    """DATA 캐시가 비어 있어도 날짜별 예측 CSV를 직접 다시 찾고 읽는다."""
+    path, label = resolve_historical_prediction_path()
+    df, status = safe_read_csv(path, required=False, label=label)
+    if not df.empty:
+        return _normalize_prediction_columns(df), f"{label} ({utils.rel_path(path)})"
+    return pd.DataFrame(), status.get("message", label)
+
+
 def _available_prediction_source() -> tuple[pd.DataFrame, str]:
     for key, label in [
         ("lgbm_pred", "v2 예측 결과"),
@@ -72,7 +92,17 @@ def _available_prediction_source() -> tuple[pd.DataFrame, str]:
     ]:
         df = DATA.get(key, pd.DataFrame())
         if isinstance(df, pd.DataFrame) and not df.empty:
-            return _normalize_prediction_columns(df), str(label)
+            source_path = DATA.get("historical_prediction_path") if key == "historical_predictions" else None
+            suffix = f" ({utils.rel_path(source_path)})" if source_path else ""
+            return _normalize_prediction_columns(df), f"{label}{suffix}"
+
+    direct_df, direct_label = _load_historical_predictions_directly()
+    if not direct_df.empty:
+        return direct_df, direct_label
+
+    future_df = DATA.get("future_pred", pd.DataFrame())
+    if isinstance(future_df, pd.DataFrame) and not future_df.empty:
+        return _normalize_prediction_columns(future_df), "Stage05 미래 예측 결과 fallback"
     return pd.DataFrame(), ""
 
 
@@ -183,7 +213,8 @@ def render_race_predictions() -> None:
     else:
         pred_df, source = _available_prediction_source()
         if pred_df.empty:
-            st.warning("과거 검증용 v2 예측/모델링 데이터가 없습니다. 데이터 상태 점검 탭에서 누락 파일을 확인하세요.")
+            st.warning("과거 검증용 예측 CSV를 찾지 못했습니다. 데이터/파일 상태 점검 탭에서 `v2 Walk-forward 경주별 예측 결과` 또는 Stage05 미래 예측 결과 파일 상태를 확인하세요.")
+            st.info("필요 파일 예: `kra_race_prediction_stage03_model_upgrade_v2/outputs/tables/walk_forward_race_predictions.csv`")
             return
         st.caption(f"사용 데이터: {source}")
         if MODEL is None:
@@ -195,8 +226,13 @@ def render_feature_tab() -> None:
     st.header("예측 근거/피처 설명")
     pred_df, source = _available_prediction_source()
     if pred_df.empty:
-        st.warning("예측 근거를 표시할 경주별 데이터가 없습니다.")
-        return
+        future_df = DATA.get("future_pred", pd.DataFrame())
+        if isinstance(future_df, pd.DataFrame) and not future_df.empty:
+            pred_df = _normalize_prediction_columns(future_df)
+            source = "Stage05 미래 예측 결과 fallback"
+        else:
+            st.warning("예측 근거를 표시할 경주별 데이터가 없습니다. `walk_forward_race_predictions.csv` 또는 `next_race_predictions.csv` 파일 상태를 확인하세요.")
+            return
     st.caption(f"사용 데이터: {source}")
     race_df = _filter_race_ui(pred_df, "feature")
     if race_df.empty:
